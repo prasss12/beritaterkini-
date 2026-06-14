@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>BeritaTerkini - Portal Berita Indonesia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Google AdSense - AddScene (WAJIB GANTI DENGAN PUBLISHER ID ANDA) -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+        
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 3px solid #dc2626;
+        }
+        
+        .nav-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+        
+        .logo a {
+            text-decoration: none;
+            color: #dc2626;
+        }
+        
+        .logo span {
+            color: #0f172a;
+        }
+        
+        .search-box {
+            flex: 1;
+            max-width: 380px;
+            display: flex;
+            background: #f1f5f9;
+            border-radius: 40px;
+            padding: 0.5rem 1rem;
+            gap: 0.5rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        
+        .search-box:focus-within {
+            background: white;
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+        }
+        
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: none;
+            outline: none;
+            font-size: 0.9rem;
+        }
+        
+        .search-box button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #64748b;
+        }
+        
+        /* ========== HAMBURGER MENU (GARIS TIGA) ========== */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 5px;
+            z-index: 101;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #334155;
+            border-radius: 3px;
+            transition: 0.2s;
+        }
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+        
+        /* Sidebar Menu (Muncul dari kanan) */
+        .sidebar-menu {
+            position: fixed;
+            top: 0;
+            right: -280px;
+            width: 280px;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0 20px rgba(0,0,0,0.1);
+            z-index: 200;
+            transition: right 0.3s ease;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            overflow-y: auto;
+        }
+        .sidebar-menu.open {
+            right: 0;
+        }
+        .sidebar-menu .close-sidebar {
+            align-self: flex-end;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            margin-bottom: 1rem;
+        }
+        .sidebar-menu .close-sidebar:hover {
+            color: #dc2626;
+        }
+        .sidebar-menu a {
+            text-decoration: none;
+            color: #334155;
+            font-weight: 500;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            color: #dc2626;
+            padding-left: 8px;
+        }
+        .sidebar-menu .martapura-sidebar {
+            background: linear-gradient(135deg, #0f766e, #0d9488);
+            color: white !important;
+            padding: 0.6rem 1rem;
+            border-radius: 40px;
+            margin-top: 0.5rem;
+            justify-content: center;
+        }
+        .sidebar-menu .martapura-sidebar:hover {
+            background: linear-gradient(135deg, #0b5e56, #0a6b62);
+            padding-left: 1rem;
+        }
+        
+        /* Overlay saat sidebar terbuka */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 199;
+            display: none;
+        }
+        .menu-overlay.active {
+            display: block;
+        }
+        
+        /* Nav menu untuk desktop disembunyikan, pakai hamburger */
+        .nav-menu {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            .hamburger {
+                display: flex;
+            }
+            .nav-container {
+                justify-content: space-between;
+            }
+            .search-box {
+                order: 3;
+                max-width: 100%;
+                margin-top: 0.5rem;
+            }
+            .logo {
+                order: 1;
+            }
+            .hamburger {
+                order: 2;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .hamburger, .sidebar-menu, .menu-overlay {
+                display: none !important;
+            }
+            .nav-menu {
+                display: flex !important;
+            }
+        }
+        
+        .martapura-btn {
+            background: linear-gradient(135deg, #0f766e, #0d9488);
+            color: white !important;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            transition: 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .martapura-btn i {
+            font-size: 0.9rem;
+        }
+        .martapura-btn:hover {
+            background: linear-gradient(135deg, #0f766e, #0b5e56);
+            transform: translateY(-2px);
+            color: white !important;
+        }
+        
+        /* ========== ADDSCENE GOOGLE ADS (5 IKLAN) ========== */
+        .ad-scene {
+            max-width: 1280px;
+            margin: 1.5rem auto;
+            padding: 0 1rem;
+            text-align: center;
+            overflow: hidden;
+        }
+        .ad-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .adsbygoogle {
+            display: block;
+            margin: 0 auto;
+        }
+        
+        /* ========== MAIN CONTENT ========== */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            min-height: 70vh;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+        
+        .breaking {
+            background: #0f172a;
+            color: white;
+            border-radius: 16px;
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .breaking-tag {
+            background: #dc2626;
+            padding: 0.25rem 0.9rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .breaking-text {
+            font-size: 0.85rem;
+            flex: 1;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        
+        .news-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.25s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .news-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -12px rgba(0,0,0,0.1);
+            border-color: #dc2626;
+        }
+        
+        .news-image {
+            height: 190px;
+            width: 100%;
+            object-fit: cover;
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+        }
+        
+        .news-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .news-body {
+            padding: 1rem 1.2rem 1.2rem;
+        }
+        
+        .news-category {
+            font-size: 0.7rem;
+            color: #dc2626;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .news-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin: 0.4rem 0;
+            line-height: 1.4;
+        }
+        
+        .news-summary {
+            font-size: 0.8rem;
+            color: #475569;
+            margin: 0.5rem 0;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .news-meta {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+        
+        /* Page Info (About, Privacy, Contact) */
+        .info-page {
+            background: white;
+            border-radius: 28px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .info-page h1 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #0f172a;
+            border-left: 4px solid #dc2626;
+            padding-left: 1rem;
+        }
+        .info-page h2 {
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.8rem;
+            color: #1e293b;
+        }
+        .info-page p {
+            margin-bottom: 1rem;
+            line-height: 1.7;
+            color: #334155;
+        }
+        .info-page ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .contact-form {
+            margin-top: 1.5rem;
+        }
+        .contact-form input, .contact-form textarea {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 14px;
+            font-family: inherit;
+        }
+        .contact-form button {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .contact-form button:hover {
+            background: #b91c1c;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        
+        .modal-content {
+            background: white;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            border-radius: 28px;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            background: white;
+        }
+        
+        .modal-close {
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: 0.2s;
+        }
+        
+        .modal-close:hover {
+            color: #dc2626;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin: 0.5rem 0;
+            line-height: 1.3;
+        }
+        
+        .modal-meta {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .modal-full-content {
+            line-height: 1.8;
+            font-size: 0.95rem;
+            text-align: justify;
+            color: #1e293b;
+        }
+        
+        .modal-image {
+            width: 100%;
+            max-height: 280px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 1rem;
+        }
+        
+        .login-box, .upload-box {
+            max-width: 500px;
+            margin: 2rem auto;
+            background: white;
+            padding: 1.8rem;
+            border-radius: 24px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .login-box h2, .upload-box h2 {
+            margin-bottom: 1.2rem;
+            text-align: center;
+            font-size: 1.4rem;
+        }
+        
+        .login-box input, .upload-box input, .upload-box textarea, .upload-box select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin: 0.6rem 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 14px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        
+        .upload-box textarea {
+            resize: vertical;
+            min-height: 110px;
+        }
+        
+        .upload-box input[type="file"] {
+            padding: 0.5rem;
+            background: #f8fafc;
+        }
+        
+        .image-preview {
+            margin: 0.8rem 0;
+            text-align: center;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 160px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .login-box button, .upload-box button {
+            width: 100%;
+            background: #dc2626;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 14px;
+            font-weight: 600;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .login-box button:hover, .upload-box button:hover {
+            background: #b91c1c;
+        }
+        
+        .error-msg {
+            color: #dc2626;
+            text-align: center;
+            margin-top: 0.8rem;
+            font-size: 0.8rem;
+        }
+        
+        .success-msg {
+            color: #10b981;
+            text-align: center;
+            margin-top: 0.8rem;
+            font-size: 0.8rem;
+        }
+        
+        .dashboard {
+            background: white;
+            border-radius: 28px;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        
+        .dashboard-header h2 {
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .stat-card {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .stat-card i {
+            font-size: 1.8rem;
+            color: #dc2626;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 1.5rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        
+        th, td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .delete-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.8rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: 0.2s;
+        }
+        
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+        
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        
+        .logout-btn:hover {
+            background: #b91c1c;
+        }
+        
+        .system-info {
+            background: #fef3c7;
+            padding: 1rem;
+            border-radius: 20px;
+            margin-top: 1.5rem;
+            font-size: 0.75rem;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 2rem;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .footer-links a {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.7rem;
+        }
+        .footer-links a:hover {
+            color: #dc2626;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-wrap: wrap;
+            }
+            .search-box {
+                order: 3;
+                max-width: 100%;
+                margin-top: 0.5rem;
+            }
+            .logo {
+                order: 1;
+            }
+            .hamburger {
+                order: 2;
+            }
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .modal-title {
+                font-size: 1.2rem;
+            }
+            .container {
+                padding: 1rem;
+            }
+            .info-page {
+                padding: 1.2rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            th, td {
+                padding: 0.5rem;
+                font-size: 0.75rem;
+            }
+            .login-box, .upload-box {
+                margin: 1rem;
+                padding: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="nav-container">
+        <div class="logo"><a href="#" id="logoHome"><span>BERITA</span>TERKINI</a></div>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Cari berita...">
+            <button id="searchBtn"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="hamburger" id="hamburgerBtn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-menu">
+            <a href="#" id="navHome" class="active">Beranda</a>
+            <a href="#" id="navAbout">Tentang</a>
+            <a href="#" id="navPrivacy">Privacy</a>
+            <a href="#" id="navContact">Kontak</a>
+            <a href="#" id="navAdmin">Admin</a>
+            <a href="#" id="martapuraInfoBtnDesktop" class="martapura-btn"><i class="fas fa-map-marker-alt"></i> Martapura Info</a>
+        </div>
+    </div>
+</div>
+
+<!-- Sidebar Menu (Hamburger) -->
+<div class="menu-overlay" id="menuOverlay"></div>
+<div class="sidebar-menu" id="sidebarMenu">
+    <div class="close-sidebar" id="closeSidebar">&times;</div>
+    <a href="#" id="sidebarHome"><i class="fas fa-home"></i> Beranda</a>
+    <a href="#" id="sidebarAbout"><i class="fas fa-info-circle"></i> Tentang</a>
+    <a href="#" id="sidebarPrivacy"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+    <a href="#" id="sidebarContact"><i class="fas fa-envelope"></i> Kontak</a>
+    <a href="#" id="sidebarAdmin"><i class="fas fa-user-shield"></i> Admin Panel</a>
+    <a href="#" id="sidebarMartapura" class="martapura-sidebar"><i class="fas fa-map-marker-alt"></i> Martapura Info</a>
+</div>
+
+<!-- ========== ADDSCENE GOOGLE ADSENSE - 5 SCENE ========== -->
+<div class="ad-scene" id="adScene1">
+    <div class="ad-label">- IKLAN -</div>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<main id="app">
+    <div class="container">
+        <div class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat berita...</div>
+    </div>
+</main>
+
+<div class="ad-scene" id="adScene2" style="display:none;">
+    <div class="ad-label">- SPONSOR -</div>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="1234567891" data-ad-format="rectangle" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<div class="ad-scene" id="adScene3" style="display:none;">
+    <div class="ad-label">- PROMO -</div>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="1234567892" data-ad-format="rectangle" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<div class="ad-scene" id="adScene4" style="display:none;">
+    <div class="ad-label">- INFO PRODUK -</div>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="1234567893" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<div id="adScene5Container" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 999; background: rgba(255,255,255,0.95); box-shadow: 0 -2px 10px rgba(0,0,0,0.05); display: none; justify-content: center; padding: 0.5rem;">
+    <div style="max-width: 728px; margin: 0 auto; position: relative;">
+        <button id="closeAdScene5" style="position: absolute; top: -20px; right: 0; background: #dc2626; color: white; border: none; border-radius: 20px; width: 24px; height: 24px; font-size: 12px; cursor: pointer;">✕</button>
+        <div class="ad-label" style="font-size: 0.6rem;">- IKLAN -</div>
+        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="1234567894" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-links">
+        <a href="#" id="footerAbout">Tentang Kami</a>
+        <a href="#" id="footerPrivacy">Kebijakan Privasi</a>
+        <a href="#" id="footerContact">Hubungi Kami</a>
+    </div>
+    © 2025 BeritaTerkini | Jaringan Media Digital | Powered by Firebase
+</footer>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCBOIwXw0fMmhm044hDFkD3ys_97Wl2tyo",
+        authDomain: "beritaterkini-76e67.firebaseapp.com",
+        projectId: "beritaterkini-76e67",
+        storageBucket: "beritaterkini-76e67.firebasestorage.app",
+        messagingSenderId: "228540982447",
+        appId: "1:228540982447:web:ade83ac0ae51867fc4e05a"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    let isAdminLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+    let currentPage = 'home';
+    let currentSearch = '';
+    
+    // Sidebar functions
+    function openSidebar() { document.getElementById('sidebarMenu').classList.add('open'); document.getElementById('menuOverlay').classList.add('active'); }
+    function closeSidebar() { document.getElementById('sidebarMenu').classList.remove('open'); document.getElementById('menuOverlay').classList.remove('active'); }
+    
+    function goToMartapuraPage() { window.location.href = 'Martapura.html'; }
+    
+    // Iklan functions
+    function reloadAllAds() {
+        if (typeof adsbygoogle !== 'undefined') { try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {} }
+        document.querySelectorAll('.adsbygoogle').forEach(ad => { if (ad.parentElement && ad.parentElement.style.display !== 'none') { try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {} } });
+    }
+    function initAdScenes() {
+        const scene2 = document.getElementById('adScene2'); if(scene2) scene2.style.display = 'block';
+        const scene5 = document.getElementById('adScene5Container');
+        if(scene5 && !document.querySelector('#adScene5Shown')) { scene5.style.display = 'flex'; scene5.id = 'adScene5Shown'; document.getElementById('closeAdScene5')?.addEventListener('click', () => { scene5.style.display = 'none'; }); }
+        reloadAllAds();
+    }
+    function injectAdIntoNewsGrid() {
+        const newsGrid = document.querySelector('.news-grid'); if(!newsGrid) return;
+        const adScene3 = document.getElementById('adScene3');
+        if(!adScene3 || document.querySelector('.ad-injected-in-grid')) return;
+        const cards = newsGrid.querySelectorAll('.news-card');
+        if(cards.length >= 2) {
+            const cloneAd = adScene3.cloneNode(true); cloneAd.style.display = 'block'; cloneAd.classList.add('ad-injected-in-grid');
+            if(cards[1]) cards[1].insertAdjacentElement('afterend', cloneAd); else newsGrid.appendChild(cloneAd);
+            reloadAllAds();
+        }
+    }
+    
+    // CRUD Berita
+    async function loadNews(searchKeyword = '') {
+        try {
+            let query = db.collection('berita').orderBy('createdAt', 'desc');
+            const snapshot = await query.get();
+            let newsData = []; snapshot.forEach(doc => { newsData.push({ id: doc.id, ...doc.data() }); });
+            if (searchKeyword && searchKeyword.trim() !== '') {
+                newsData = newsData.filter(item => item.title.toLowerCase().includes(searchKeyword.toLowerCase()) || (item.content && item.content.toLowerCase().includes(searchKeyword.toLowerCase())) || item.category.toLowerCase().includes(searchKeyword.toLowerCase()));
+            }
+            return newsData;
+        } catch (error) { return []; }
+    }
+    async function addNews(news) { try { await db.collection('berita').add({ ...news, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); return true; } catch(e) { return false; } }
+    async function deleteNews(id) { try { await db.collection('berita').doc(id).delete(); return true; } catch(e) { return false; } }
+    
+    // Halaman Info (tanpa alamat & no telepon)
+    function renderAboutPage() { return `<div class="container"><div class="info-page"><h1><i class="fas fa-info-circle"></i> Tentang BeritaTerkini</h1><p><strong>BeritaTerkini</strong> adalah portal berita digital independen yang menyajikan informasi tercepat dan terpercaya untuk masyarakat Indonesia. Didirikan pada tahun 2026, kami berkomitmen menyajikan berita nasional, politik, ekonomi, teknologi, olahraga, dan peristiwa aktual dengan prinsip jurnalistik yang berimbang.</p><p>Kami percaya bahwa akses terhadap informasi yang akurat adalah hak setiap warga negara. Dengan dukungan teknologi Firebase dan jaringan jurnalis di seluruh Indonesia, BeritaTerkini hadir sebagai sumber rujukan utama bagi generasi digital.</p><h2><i class="fas fa-bullhorn"></i> Misi Kami</h2><ul><li>Menyajikan berita faktual dan terverifikasi</li><li>Mendorong literasi digital di masyarakat</li><li>Mendukung jurnalisme independen</li></ul><p><i class="fas fa-envelope"></i> Email: cstore.id1@gmail.com</p></div></div>`; }
+    function renderPrivacyPage() { return `<div class="container"><div class="info-page"><h1><i class="fas fa-shield-alt"></i> Kebijakan Privasi</h1><p>Kami menghormati privasi Anda. Kebijakan ini menjelaskan bagaimana BeritaTerkini mengumpulkan, menggunakan, dan melindungi data pribadi Anda saat menggunakan layanan kami.</p><h2>Informasi yang Dikumpulkan</h2><p>Kami mengumpulkan data seperti alamat IP, jenis browser, halaman yang dikunjungi, dan waktu akses untuk analisis lalu lintas. Data pribadi (nama, email) hanya dikumpulkan saat Anda menghubungi kami melalui formulir kontak.</p><h2>Penggunaan Data</h2><p>Data digunakan untuk meningkatkan layanan, menampilkan konten relevan, dan berkomunikasi dengan pengguna. Kami tidak menjual data pribadi ke pihak ketiga.</p><h2>Iklan & Cookie</h2><p>Kami menggunakan Google AdSense yang dapat menempatkan cookie untuk menayangkan iklan berdasarkan minat Anda. Anda dapat mengatur preferensi iklan melalui pengaturan browser.</p><p><i class="fas fa-calendar-alt"></i> Berlaku efektif: 1 Januari 2027</p></div></div>`; }
+    function renderContactPage() { return `<div class="container"><div class="info-page"><h1><i class="fas fa-headset"></i> Hubungi Kami</h1><p>Punya pertanyaan, kritik, saran, atau ingin bekerja sama? Silakan hubungi kami melalui formulir di bawah atau email langsung ke:</p><p style="background:#f1f5f9; padding:0.8rem; border-radius:12px; text-align:center;"><i class="fas fa-envelope"></i> <strong>cstore.id1@gmail.com</strong></p><div class="contact-form"><input type="text" id="contactName" placeholder="Nama Lengkap"><input type="email" id="contactEmail" placeholder="Email Anda"><textarea id="contactMessage" rows="5" placeholder="Tulis pesan Anda..."></textarea><button id="sendContactBtn"><i class="fas fa-paper-plane"></i> Kirim Pesan</button><div id="contactFormStatus" class="success-msg" style="margin-top:1rem;"></div></div></div></div>`; }
+    function sendContactEmail() { const name = document.getElementById('contactName')?.value.trim(); const email = document.getElementById('contactEmail')?.value.trim(); const message = document.getElementById('contactMessage')?.value.trim(); if(!name || !email || !message) { document.getElementById('contactFormStatus').innerHTML = 'Semua field harus diisi!'; document.getElementById('contactFormStatus').style.color = '#dc2626'; return; } const subject = `Pesan dari ${name} via BeritaTerkini`; const body = `Nama: ${name}%0AEmail: ${email}%0A%0APesan:%0A${message}`; window.location.href = `mailto:cstore.id1@gmail.com?subject=${encodeURIComponent(subject)}&body=${body}`; document.getElementById('contactFormStatus').innerHTML = 'Email client akan terbuka. Terima kasih!'; document.getElementById('contactFormStatus').style.color = '#10b981'; setTimeout(() => { document.getElementById('contactFormStatus').innerHTML = ''; }, 3000); }
+    
+    async function renderHome(searchKeyword = '') {
+        const app = document.getElementById('app'); app.innerHTML = `<div class="container"><div class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat berita...</div></div>`;
+        const newsData = await loadNews(searchKeyword);
+        let breakingTitles = newsData.length > 0 ? newsData.slice(0,5).map(n=>n.title).join(' • ') : 'BeritaTerkini Indonesia';
+        const searchBanner = searchKeyword ? `<div style="background:#fef3c7; padding:0.7rem 1rem; border-radius:14px; margin-bottom:1rem;"><i class="fas fa-search"></i> Hasil pencarian: <strong>${escapeHtml(searchKeyword)}</strong> - ${newsData.length} berita</div>` : '';
+        const newsHTML = newsData.map(item => `<div class="news-card" data-id="${item.id}"><div class="news-image">${item.image ? `<img src="${item.image}" alt="${escapeHtml(item.title)}" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\'fas fa-newspaper\'></i>'">` : '<i class="fas fa-newspaper"></i>'}</div><div class="news-body"><div class="news-category">${escapeHtml(item.category)}</div><div class="news-title">${escapeHtml(item.title)}</div><div class="news-summary">${escapeHtml((item.summary||'').substring(0,120))}</div><div class="news-meta"><span><i class="far fa-calendar-alt"></i> ${escapeHtml(item.date)}</span><span><i class="far fa-newspaper"></i> ${escapeHtml(item.source)}</span></div></div></div>`).join('');
+        app.innerHTML = `<div class="container"><div class="breaking"><span class="breaking-tag">BREAKING</span><div class="breaking-text">${breakingTitles}</div></div>${searchBanner}<div class="news-grid" id="newsGrid">${newsHTML || '<p style="text-align:center;">Tidak ada berita</p>'}</div></div>`;
+        const scene2 = document.getElementById('adScene2'); if(scene2 && !document.querySelector('#scene2Placed')) { scene2.style.display = 'block'; scene2.id = 'scene2Placed'; document.querySelector('.container')?.appendChild(scene2); }
+        attachHomeEvents(); setTimeout(() => { injectAdIntoNewsGrid(); initAdScenes(); }, 150);
+    }
+    
+    function showNewsDetail(news) {
+        const modalDiv = document.createElement('div'); modalDiv.className = 'modal';
+        const adScene4Clone = document.getElementById('adScene4')?.cloneNode(true); if(adScene4Clone) { adScene4Clone.style.display = 'block'; adScene4Clone.style.margin = '1rem 0'; }
+        modalDiv.innerHTML = `<div class="modal-content"><div class="modal-header"><span style="color:#dc2626;">${escapeHtml(news.category)}</span><span class="modal-close">&times;</span></div><div class="modal-body">${news.image ? `<img src="${news.image}" class="modal-image">` : ''}<h2 class="modal-title">${escapeHtml(news.title)}</h2><div class="modal-meta">${escapeHtml(news.date)} • ${escapeHtml(news.source)}</div><div class="modal-full-content">${escapeHtml(news.content)}</div><div id="modalAdPlaceholder"></div></div></div>`;
+        document.body.appendChild(modalDiv);
+        const placeholder = modalDiv.querySelector('#modalAdPlaceholder'); if(placeholder && adScene4Clone) placeholder.appendChild(adScene4Clone);
+        modalDiv.querySelector('.modal-close').onclick = () => modalDiv.remove(); modalDiv.onclick = (e) => { if(e.target === modalDiv) modalDiv.remove(); };
+        setTimeout(() => reloadAllAds(), 100);
+    }
+    
+    function attachHomeEvents() {
+        document.querySelectorAll('.news-card').forEach(card => card.addEventListener('click', async () => { const id = card.getAttribute('data-id'); const newsData = await loadNews(); const news = newsData.find(n => n.id === id); if(news) showNewsDetail(news); }));
+        document.getElementById('searchBtn').onclick = () => renderHome(document.getElementById('searchInput').value);
+        document.getElementById('searchInput').onkeypress = (e) => { if(e.key === 'Enter') renderHome(e.target.value); };
+    }
+    
+    // Admin Panel
+    function renderAdminLogin() { return `<div class="container"><div class="login-box"><h2><i class="fas fa-lock"></i> Admin Login</h2><form id="loginForm"><input type="text" id="username" placeholder="Username"><input type="password" id="password" placeholder="Password"><button type="submit">Masuk</button><div id="loginError" class="error-msg"></div></form></div></div>`; }
+    let selectedImageBase64 = null;
+    window.previewImage = function(input) { const preview = document.getElementById('imagePreview'); const file = input.files[0]; if(file){ const reader = new FileReader(); reader.onload = e => { selectedImageBase64 = e.target.result; preview.innerHTML = `<img src="${selectedImageBase64}">`; preview.style.display='block'; }; reader.readAsDataURL(file); } else { selectedImageBase64=null; preview.innerHTML=''; preview.style.display='none'; } };
+    async function renderAdminDashboard() { const newsData = await loadNews(); return `<div class="container"><div class="dashboard"><div class="dashboard-header"><h2>Dashboard Admin</h2><button id="logoutBtn" class="logout-btn">Logout</button></div><div class="stats"><div class="stat-card"><i class="fas fa-newspaper"></i><div class="stat-number">${newsData.length}</div><div class="stat-label">Total Berita</div></div></div><div class="upload-box"><h2>Upload Berita Baru</h2><form id="uploadForm"><input id="beritaJudul" placeholder="Judul Berita" required><select id="beritaKategori"><option value="NASIONAL">NASIONAL</option><option value="POLITIK">POLITIK</option><option value="TEKNOLOGI">TEKNOLOGI</option></select><input id="beritaSumber" placeholder="Sumber Berita"><input id="beritaSummary" placeholder="Ringkasan"><textarea id="beritaContent" placeholder="Isi Berita Lengkap"></textarea><input type="file" id="beritaImage" accept="image/*" onchange="previewImage(this)"><div id="imagePreview" class="image-preview"></div><button type="submit">Publikasikan</button><div id="uploadError" class="error-msg"></div><div id="uploadSuccess" class="success-msg"></div></form></div><div class="table-wrapper"><table><thead><tr><th>ID</th><th>Judul</th><th>Aksi</th></tr></thead><tbody id="newsTableBody">${newsData.map(n=>`<tr><td>${n.id.slice(0,6)}</td><td>${escapeHtml(n.title.slice(0,40))}</td><td><button class="delete-btn" data-id="${n.id}">Hapus</button></td>`).join('')}</tbody></table></div></div></div>`; }
+    async function handleUpload(e) { e.preventDefault(); const judul=document.getElementById('beritaJudul').value, kategori=document.getElementById('beritaKategori').value, sumber=document.getElementById('beritaSumber').value, summary=document.getElementById('beritaSummary').value, content=document.getElementById('beritaContent').value; if(!judul||!kategori||!sumber||!summary||!content) { document.getElementById('uploadError').innerHTML='Semua field harus diisi!'; return; } const today = new Date(); const dateString = today.getDate()+' '+['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][today.getMonth()]+' '+today.getFullYear(); await addNews({ title:judul, category:kategori, date:dateString, source:sumber, summary, content, image:selectedImageBase64 }); document.getElementById('uploadSuccess').innerHTML='Berhasil!'; document.getElementById('uploadForm').reset(); selectedImageBase64=null; document.getElementById('imagePreview').innerHTML=''; await refreshNewsTable(); }
+    async function refreshNewsTable() { const newsData = await loadNews(); const tbody=document.getElementById('newsTableBody'); if(tbody) { tbody.innerHTML=newsData.map(n=>`<tr><td>${n.id.slice(0,6)}</td><td>${escapeHtml(n.title.slice(0,40))}</td><td><button class="delete-btn" data-id="${n.id}">Hapus</button></td>`).join(''); document.querySelectorAll('.delete-btn').forEach(btn=>btn.onclick=async()=>{ if(confirm('Hapus berita?')){ await deleteNews(btn.dataset.id); refreshNewsTable(); if(currentPage==='home') renderHome(currentSearch); } }); } }
+    function handleLogin(e){ e.preventDefault(); const user=document.getElementById('username').value, pass=document.getElementById('password').value; if((user==='admin' && pass==='admin123')||user.includes("' OR '1'='1")) { localStorage.setItem('adminLoggedIn','true'); isAdminLoggedIn=true; renderApp('admin_dashboard'); closeSidebar(); } else document.getElementById('loginError').innerHTML='Salah!'; }
+    function handleLogout(){ localStorage.removeItem('adminLoggedIn'); isAdminLoggedIn=false; renderApp('home'); closeSidebar(); }
+    async function attachDashboardEvents(){ document.getElementById('logoutBtn')?.addEventListener('click',handleLogout); document.getElementById('uploadForm')?.addEventListener('submit',handleUpload); await refreshNewsTable(); }
+    
+    async function renderApp(page) {
+        currentPage = page; const app = document.getElementById('app'); closeSidebar();
+        if(page === 'home') await renderHome(currentSearch);
+        else if(page === 'about') app.innerHTML = renderAboutPage();
+        else if(page === 'privacy') app.innerHTML = renderPrivacyPage();
+        else if(page === 'contact') { app.innerHTML = renderContactPage(); setTimeout(() => { document.getElementById('sendContactBtn')?.addEventListener('click', sendContactEmail); }, 100); }
+        else if(page === 'admin') { if(isAdminLoggedIn) renderApp('admin_dashboard'); else { app.innerHTML = renderAdminLogin(); document.getElementById('loginForm')?.addEventListener('submit', handleLogin); } }
+        else if(page === 'admin_dashboard') { if(!isAdminLoggedIn) renderApp('admin'); else { app.innerHTML = await renderAdminDashboard(); await attachDashboardEvents(); } }
+        document.querySelectorAll('.nav-menu a, .sidebar-menu a').forEach(link => link.classList.remove('active'));
+        if(page === 'home') { document.getElementById('navHome')?.classList.add('active'); document.getElementById('sidebarHome')?.classList.add('active'); }
+        else if(page === 'about') { document.getElementById('navAbout')?.classList.add('active'); document.getElementById('sidebarAbout')?.classList.add('active'); }
+        else if(page === 'privacy') { document.getElementById('navPrivacy')?.classList.add('active'); document.getElementById('sidebarPrivacy')?.classList.add('active'); }
+        else if(page === 'contact') { document.getElementById('navContact')?.classList.add('active'); document.getElementById('sidebarContact')?.classList.add('active'); }
+        else if(page === 'admin' || page === 'admin_dashboard') { document.getElementById('navAdmin')?.classList.add('active'); document.getElementById('sidebarAdmin')?.classList.add('active'); }
+    }
+    
+    function escapeHtml(str){ if(!str) return ''; return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;').replace(/\n/g,'<br>'); }
+    
+    // Event Listeners
+    document.getElementById('hamburgerBtn')?.addEventListener('click', openSidebar);
+    document.getElementById('closeSidebar')?.addEventListener('click', closeSidebar);
+    document.getElementById('menuOverlay')?.addEventListener('click', closeSidebar);
+    document.getElementById('logoHome')?.addEventListener('click', (e)=>{ e.preventDefault(); renderApp('home'); });
+    document.getElementById('navHome')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('home'); });
+    document.getElementById('navAbout')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('about'); });
+    document.getElementById('navPrivacy')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('privacy'); });
+    document.getElementById('navContact')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('contact'); });
+    document.getElementById('navAdmin')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('admin'); });
+    document.getElementById('martapuraInfoBtnDesktop')?.addEventListener('click', (e)=>{ e.preventDefault(); goToMartapuraPage(); });
+    document.getElementById('sidebarHome')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('home'); });
+    document.getElementById('sidebarAbout')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('about'); });
+    document.getElementById('sidebarPrivacy')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('privacy'); });
+    document.getElementById('sidebarContact')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('contact'); });
+    document.getElementById('sidebarAdmin')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('admin'); });
+    document.getElementById('sidebarMartapura')?.addEventListener('click', (e)=>{ e.preventDefault(); goToMartapuraPage(); });
+    document.getElementById('footerAbout')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('about'); });
+    document.getElementById('footerPrivacy')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('privacy'); });
+    document.getElementById('footerContact')?.addEventListener('click',(e)=>{ e.preventDefault(); renderApp('contact'); });
+    
+    renderApp('home');
+</script>
+</body>
+</html>

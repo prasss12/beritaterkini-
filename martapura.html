@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Martapura News - Info Seputar Martapura</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Firebase SDKs untuk Firestore (tanpa Storage) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background: #f5f5f5;
+            color: #1a1a1a;
+        }
+
+        .main-header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e3c72, #2b6cb0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            cursor: pointer;
+        }
+        
+        .logo p {
+            font-size: 11px;
+            color: #666;
+            letter-spacing: 1px;
+        }
+        
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .nav-menu a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 600;
+            transition: 0.3s;
+            padding: 8px 0;
+        }
+        
+        .nav-menu a:hover {
+            color: #2563eb;
+        }
+        
+        .nav-menu a.active {
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+        }
+        
+        .search-container {
+            flex: 1;
+            max-width: 400px;
+            position: relative;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        
+        .search-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #2563eb;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        /* Hidden Admin Login Button */
+        .hidden-login {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(37,99,235,0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .hidden-login:hover {
+            opacity: 0.3;
+        }
+        
+        .admin-shortcut-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 80px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 999;
+        }
+        
+        .hidden-login:hover + .admin-shortcut-hint {
+            opacity: 0.7;
+        }
+        
+        /* Hero Section */
+        .hero {
+            position: relative;
+            padding: 100px 0;
+            margin-bottom: 40px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: white;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+        }
+        
+        .hero h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .hero p {
+            font-size: 18px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .news-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #2563eb;
+            display: inline-block;
+        }
+        
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+        
+        .news-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        
+        .news-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .news-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+        
+        .news-content {
+            padding: 20px;
+        }
+        
+        .news-date {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .news-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .news-excerpt {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .empty-news {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 10px;
+            color: #999;
+        }
+        
+        .empty-news i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #2563eb;
+        }
+        
+        /* Admin Dashboard */
+        .admin-dashboard {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f0f2f5;
+            z-index: 2000;
+            overflow-y: auto;
+        }
+        
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .dashboard-header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dashboard-header h2 {
+            font-size: 24px;
+            color: #1e3a8a;
+        }
+        
+        .close-dashboard {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: #e6f0ff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stat-icon i {
+            font-size: 30px;
+            color: #2563eb;
+        }
+        
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        .form-section, .berita-list-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+        }
+        
+        .form-section h3, .berita-list-section h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+            border-left: 4px solid #2563eb;
+            padding-left: 12px;
+        }
+        
+        .dashboard-form-group {
+            margin-bottom: 18px;
+        }
+        
+        .dashboard-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .dashboard-form-group input,
+        .dashboard-form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+        
+        .preview-img {
+            margin-top: 10px;
+            max-width: 150px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+        
+        .berita-list-section {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .dashboard-berita-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .dashboard-berita-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .dashboard-berita-info {
+            flex: 1;
+        }
+        
+        .dashboard-berita-info h4 {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .btn-delete {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .btn-delete:hover {
+            background: #b91c1c;
+        }
+        
+        .chart-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+        
+        canvas {
+            max-height: 250px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 2100;
+            display: none;
+        }
+        
+        footer {
+            background: #1a1a2e;
+            color: white;
+            padding: 40px 0;
+            margin-top: 40px;
+            text-align: center;
+        }
+        
+        @media (max-width: 900px) {
+            .dashboard-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+            .header-content {
+                flex-direction: column;
+            }
+            .search-container {
+                width: 100%;
+                max-width: 100%;
+            }
+            .nav-menu {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-header">
+    <div class="container">
+        <div class="header-content">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <h1><i class="fas fa-newspaper"></i> MARTAPURA<span style="color:#2563eb">NEWS</span></h1>
+                <p>#Informasi Martapura</p>
+            </div>
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-box" placeholder="Cari berita...">
+                <button class="search-btn" onclick="searchInfo()">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="active">Martapura</a>
+                <a href="home.html">BeritaTerkini</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="hiddenLoginBtn" class="hidden-login"></div>
+<div class="admin-shortcut-hint">Admin Login (Ctrl+Shift+A)</div>
+
+<div class="hero" id="heroSection">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Informasi Martapura</h1>
+            <p>Informasi Terpercaya, untuk Masyarakat Martapura dan Sekitarnya</p>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="news-section">
+        <h2 class="section-title" id="sectionTitle">BERITA TERBARU</h2>
+        <div id="searchResultInfo"></div>
+        <div class="news-grid" id="newsGrid"></div>
+    </div>
+</div>
+
+<div id="adminDashboard" class="admin-dashboard">
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2><i class="fas fa-tachometer-alt"></i> Dashboard Admin Martapura News</h2>
+            <button class="close-dashboard" onclick="closeDashboard()"><i class="fas fa-times"></i> Tutup Dashboard</button>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-number" id="totalBerita">0</div>
+                    <h3>Total Berita</h3>
+                </div>
+                <div class="stat-icon"><i class="fas fa-newspaper"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-number" id="beritaHariIni">0</div>
+                    <h3>Berita Hari Ini</h3>
+                </div>
+                <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-number" id="beritaBulanIni">0</div>
+                    <h3>Bulan Ini</h3>
+                </div>
+                <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+            </div>
+        </div>
+        
+        <div class="dashboard-content">
+            <div class="form-section">
+                <h3><i class="fas fa-plus-circle"></i> Tambah Berita Baru</h3>
+                <form id="beritaForm">
+                    <div class="dashboard-form-group">
+                        <label>Judul Berita</label>
+                        <input type="text" id="judulBerita" required placeholder="Masukkan judul berita...">
+                    </div>
+                    <div class="dashboard-form-group">
+                        <label>Isi Berita</label>
+                        <textarea id="deskripsiBerita" rows="5" required placeholder="Tulis isi berita lengkap..."></textarea>
+                    </div>
+                    <div class="dashboard-form-group">
+                        <label>Foto Berita</label>
+                        <input type="file" id="fotoBerita" accept="image/*" required>
+                        <div id="previewFoto"></div>
+                        <small style="color:#666; display:block; margin-top:5px;">Foto akan disimpan langsung ke Firestore (base64)</small>
+                    </div>
+                    <button type="submit" class="btn-primary"><i class="fas fa-cloud-upload-alt"></i> Publikasikan Berita</button>
+                </form>
+                <hr style="margin:20px 0;">
+                <button onclick="logoutAdmin()" class="btn-primary" style="background:#dc2626;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+            
+            <div class="berita-list-section">
+                <h3><i class="fas fa-list"></i> Daftar Berita</h3>
+                <div id="dashboardBeritaList"></div>
+            </div>
+        </div>
+        
+        <div class="chart-section">
+            <h3><i class="fas fa-chart-line"></i> Statistik Berita per Bulan</h3>
+            <canvas id="beritaChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div id="detailModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; max-width:700px; width:90%; border-radius:15px; padding:30px; max-height:90%; overflow-y:auto;">
+        <span onclick="closeDetailModal()" style="float:right; font-size:28px; cursor:pointer;">&times;</span>
+        <div id="detailContent"></div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<footer>
+    <div class="container">
+        <p>&copy; 2026 Martapura Info. All Rights Reserved.</p>
+    </div>
+</footer>
+
+<script>
+    // ============= KONFIGURASI FIREBASE =============
+    const firebaseConfig = {
+        apiKey: "AIzaSyCKz0TR-a6sXzZbOHYo6-dgpoNF1IgOxD0",
+        authDomain: "martapurainfo.firebaseapp.com",
+        projectId: "martapurainfo",
+        storageBucket: "martapurainfo.firebasestorage.app",
+        messagingSenderId: "588004409825",
+        appId: "1:588004409825:web:09e962cb2cdae4fe6912a0",
+        measurementId: "G-F9Q46V2Z2Q"
+    };
+
+    // Inisialisasi Firebase (tanpa Storage)
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Admin credentials
+    const ADMIN_USERNAME = "admin";
+    const ADMIN_PASSWORD = "2992009";
+    
+    let isAdminLoggedIn = false;
+    let allBerita = [];
+    let currentSearchTerm = '';
+    let beritaChart = null;
+
+    // Cek session login
+    function checkSession() {
+        const savedSession = localStorage.getItem('adminLoggedIn');
+        if (savedSession === 'true') {
+            isAdminLoggedIn = true;
+            console.log('✅ Session ditemukan, admin sudah login');
+            showToast('Admin sudah login, tekan Ctrl+Shift+A untuk buka dashboard');
+        }
+    }
+
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.background = isError ? '#dc2626' : '#2563eb';
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    function setHeroBackground() {
+        const fotoList = ['hero-bg.jpg', 'hero-background.jpg', 'martapura-bg.jpg', 'background.jpg', 'bg-hero.jpg'];
+        for (let i = 0; i < fotoList.length; i++) {
+            const img = new Image();
+            img.onload = function() {
+                document.getElementById('heroSection').style.backgroundImage = `url('${fotoList[i]}')`;
+                document.getElementById('heroSection').style.backgroundSize = 'cover';
+                document.getElementById('heroSection').style.backgroundPosition = 'center';
+                document.getElementById('heroSection').style.backgroundAttachment = 'fixed';
+            };
+            img.src = fotoList[i];
+        }
+    }
+
+    // Load berita dari Firestore
+    async function loadBerita() {
+        try {
+            console.log('📡 Mengambil data dari Firestore...');
+            const snapshot = await db.collection('berita').orderBy('timestamp', 'desc').get();
+            allBerita = [];
+            snapshot.forEach(doc => {
+                allBerita.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            console.log(`✅ Berhasil memuat ${allBerita.length} berita`);
+            renderBerita();
+            if (isAdminLoggedIn) {
+                renderDashboardBerita();
+                updateDashboardStats();
+                updateChart();
+            }
+        } catch (error) {
+            console.error("❌ Error load berita:", error);
+            showToast("Gagal memuat berita: " + error.message, true);
+            allBerita = [];
+            renderBerita();
+        }
+    }
+
+    function renderBerita(beritaArray = null) {
+        const data = beritaArray || allBerita;
+        const newsGrid = document.getElementById('newsGrid');
+        
+        if (data.length === 0) {
+            newsGrid.innerHTML = `
+                <div class="empty-news">
+                    <i class="fas fa-newspaper"></i>
+                    <h3>Belum Ada Berita</h3>
+                    <p>Belum ada berita yang dipublikasikan. Login admin untuk menambah berita.</p>
+                    <p style="margin-top:15px; font-size:12px;">Tekan Ctrl+Shift+A untuk login admin</p>
+                </div>
+            `;
+            return;
+        }
+        
+        newsGrid.innerHTML = data.map(berita => `
+            <div class="news-card" onclick="showDetail('${berita.id}')">
+                <img class="news-img" src="${berita.fotoBase64 || 'https://picsum.photos/id/100/400/250'}" onerror="this.src='https://picsum.photos/id/100/400/250'">
+                <div class="news-content">
+                    <div class="news-date"><i class="far fa-calendar-alt"></i> ${formatDate(berita.timestamp)}</div>
+                    <h3 class="news-title">${escapeHtml(berita.judul)}</h3>
+                    <p class="news-excerpt">${escapeHtml(berita.deskripsi.substring(0, 120))}...</p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderDashboardBerita() {
+        const container = document.getElementById('dashboardBeritaList');
+        if (allBerita.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#999;">Belum ada berita. Tambah berita baru!</p>';
+            return;
+        }
+        
+        container.innerHTML = allBerita.map(berita => `
+            <div class="dashboard-berita-item">
+                <img class="dashboard-berita-img" src="${berita.fotoBase64 || 'https://picsum.photos/id/100/80/80'}" onerror="this.src='https://picsum.photos/id/100/80/80'">
+                <div class="dashboard-berita-info">
+                    <h4>${escapeHtml(berita.judul)}</h4>
+                    <p>${formatDate(berita.timestamp)}</p>
+                    <p style="font-size:12px; color:#666;">${escapeHtml(berita.deskripsi.substring(0, 60))}...</p>
+                </div>
+                <button class="btn-delete" onclick="deleteBerita('${berita.id}')"><i class="fas fa-trash"></i> Hapus</button>
+            </div>
+        `).join('');
+    }
+
+    function updateDashboardStats() {
+        document.getElementById('totalBerita').textContent = allBerita.length;
+        
+        const today = new Date().toDateString();
+        const todayCount = allBerita.filter(b => {
+            if (!b.timestamp) return false;
+            const date = b.timestamp.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+            return date.toDateString() === today;
+        }).length;
+        document.getElementById('beritaHariIni').textContent = todayCount;
+        
+        const thisMonth = new Date().getMonth();
+        const thisYear = new Date().getFullYear();
+        const monthCount = allBerita.filter(b => {
+            if (!b.timestamp) return false;
+            const date = b.timestamp.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+            return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
+        }).length;
+        document.getElementById('beritaBulanIni').textContent = monthCount;
+    }
+
+    function updateChart() {
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+        const monthlyCount = new Array(12).fill(0);
+        
+        allBerita.forEach(berita => {
+            if (berita.timestamp) {
+                const date = berita.timestamp.toDate ? berita.timestamp.toDate() : new Date(berita.timestamp);
+                const month = date.getMonth();
+                monthlyCount[month]++;
+            }
+        });
+        
+        const ctx = document.getElementById('beritaChart').getContext('2d');
+        if (beritaChart) beritaChart.destroy();
+        beritaChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: monthNames,
+                datasets: [{
+                    label: 'Jumlah Berita',
+                    data: monthlyCount,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37,99,235,0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: true }
+        });
+    }
+
+    window.deleteBerita = async function(id) {
+        if (!confirm('Yakin ingin menghapus berita ini?')) return;
+        try {
+            await db.collection('berita').doc(id).delete();
+            showToast('✅ Berita berhasil dihapus');
+            loadBerita();
+        } catch(error) {
+            showToast('❌ Gagal menghapus: ' + error.message, true);
+        }
+    };
+
+    // Konversi file ke base64
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    // Submit berita baru ke Firestore (foto sebagai base64)
+    document.getElementById('beritaForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!isAdminLoggedIn) {
+            showToast('Anda harus login terlebih dahulu', true);
+            return;
+        }
+        
+        const judul = document.getElementById('judulBerita').value;
+        const deskripsi = document.getElementById('deskripsiBerita').value;
+        const foto = document.getElementById('fotoBerita').files[0];
+        
+        if (!judul || !deskripsi) {
+            showToast('Lengkapi judul dan deskripsi', true);
+            return;
+        }
+        
+        if (!foto) {
+            showToast('Pilih foto terlebih dahulu', true);
+            return;
+        }
+        
+        // Validasi ukuran foto (maks 1MB untuk base64)
+        if (foto.size > 1 * 1024 * 1024) {
+            showToast('Ukuran foto terlalu besar! Maksimal 1MB agar tidak memberatkan database', true);
+            return;
+        }
+        
+        try {
+            showToast('📤 Mengupload berita ke Firestore...');
+            
+            // Konversi foto ke base64
+            const fotoBase64 = await fileToBase64(foto);
+            
+            // Simpan ke Firestore (foto langsung sebagai base64)
+            await db.collection('berita').add({
+                judul: judul,
+                deskripsi: deskripsi,
+                fotoBase64: fotoBase64,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            showToast('✅ Berita berhasil dipublikasikan!');
+            document.getElementById('beritaForm').reset();
+            document.getElementById('previewFoto').innerHTML = '';
+            closeDashboard();
+            loadBerita();
+        } catch(error) {
+            console.error('Error:', error);
+            showToast('❌ Error: ' + error.message, true);
+        }
+    });
+
+    // Preview foto
+    document.getElementById('fotoBerita').addEventListener('change', (e) => {
+        if (e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('previewFoto').innerHTML = `<img src="${ev.target.result}" class="preview-img">`;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+
+    window.showDetail = function(id) {
+        const berita = allBerita.find(b => b.id === id);
+        if (!berita) return;
+        
+        document.getElementById('detailContent').innerHTML = `
+            <img src="${berita.fotoBase64}" style="width:100%; border-radius:10px; margin-bottom:20px;">
+            <h2>${escapeHtml(berita.judul)}</h2>
+            <div style="color:#999; margin:15px 0;">${formatDate(berita.timestamp)}</div>
+            <p style="line-height:1.8;">${escapeHtml(berita.deskripsi)}</p>
+        `;
+        document.getElementById('detailModal').style.display = 'flex';
+    };
+
+    function formatDate(timestamp) {
+        if (!timestamp) return 'Baru saja';
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    window.searchBerita = function() {
+        const term = document.getElementById('searchInput').value.toLowerCase();
+        currentSearchTerm = term;
+        
+        if (!term) {
+            document.getElementById('sectionTitle').innerHTML = 'BERITA TERBARU';
+            document.getElementById('searchResultInfo').innerHTML = '';
+            renderBerita(allBerita);
+            return;
+        }
+        
+        const filtered = allBerita.filter(b => 
+            b.judul.toLowerCase().includes(term) || 
+            b.deskripsi.toLowerCase().includes(term)
+        );
+        
+        document.getElementById('sectionTitle').innerHTML = 'HASIL PENCARIAN';
+        document.getElementById('searchResultInfo').innerHTML = `<div style="background:#e6f0ff; padding:10px; border-radius:8px; margin-bottom:20px;">🔍 Menampilkan ${filtered.length} hasil untuk "${term}"</div>`;
+        renderBerita(filtered);
+    };
+
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchBerita();
+    });
+
+    // Dashboard functions
+    function openDashboard() {
+        if (!isAdminLoggedIn) {
+            showToast('Silakan login terlebih dahulu (Ctrl+Shift+A)', true);
+            return;
+        }
+        document.getElementById('adminDashboard').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        renderDashboardBerita();
+        updateDashboardStats();
+        updateChart();
+    }
+
+    window.closeDashboard = function() {
+        document.getElementById('adminDashboard').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    };
+
+    window.closeDetailModal = () => document.getElementById('detailModal').style.display = 'none';
+
+    // Login function
+    function showLoginModal() {
+        const username = prompt("🔐 Masukkan username admin:");
+        if (username !== ADMIN_USERNAME) {
+            if (username !== null) showToast("Username salah!", true);
+            return;
+        }
+        
+        const password = prompt("🔐 Masukkan password admin:");
+        if (password === ADMIN_PASSWORD) {
+            isAdminLoggedIn = true;
+            localStorage.setItem('adminLoggedIn', 'true');
+            showToast("✅ Login berhasil! Selamat datang di Dashboard Admin");
+            openDashboard();
+        } else if (password !== null) {
+            showToast("Password salah!", true);
+        }
+    }
+    
+    function logoutAdmin() {
+        isAdminLoggedIn = false;
+        localStorage.removeItem('adminLoggedIn');
+        showToast("✅ Logout berhasil");
+        closeDashboard();
+    }
+
+    // Shortcut Ctrl+Shift+A
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+            e.preventDefault();
+            if (isAdminLoggedIn) {
+                openDashboard();
+            } else {
+                showLoginModal();
+            }
+        }
+    });
+
+    document.getElementById('hiddenLoginBtn').addEventListener('click', () => {
+        if (isAdminLoggedIn) {
+            openDashboard();
+        } else {
+            showLoginModal();
+        }
+    });
+
+    // Inisialisasi
+    checkSession();
+    setHeroBackground();
+    loadBerita();
+    
+    console.log('🚀 Website Martapura News siap!');
+    console.log('📁 Firebase project: martapurainfo');
+    console.log('🔐 Login: Ctrl+Shift+A | Username: admin | Password: 2992009');
+    console.log('📸 Foto disimpan langsung ke Firestore sebagai base64');
+</script>
+</body>
+</html>
